@@ -9,7 +9,7 @@ var_map = {
     'tasmax': 'TMAX'
 }
 
-def plot_climatology(ds, ucdb_city, urban_vicinity,variable, URBAN, obs = None):
+def plot_climatology(ds, ucdb_city, urban_vicinity, variable, URBAN, obs = None):
     """
     Plot the climatological data.
 
@@ -33,7 +33,7 @@ def plot_climatology(ds, ucdb_city, urban_vicinity,variable, URBAN, obs = None):
     max_abs_value = abs(data).max().item()
     
     im1 = ax.pcolormesh(ds.lon, ds.lat, data.values,
-                    cmap='bwr', alpha = 0.7,
+                    cmap = 'bwr', alpha = 0.7,
                     vmin = - max_abs_value, 
                     vmax = max_abs_value)
     
@@ -48,17 +48,8 @@ def plot_climatology(ds, ucdb_city, urban_vicinity,variable, URBAN, obs = None):
     URBAN.plot_urban_borders(urban_vicinity, ax)
     
     if obs is not None:
-        for index, obs in obs.iterrows():
-            obs_lon = obs['lon']
-            obs_lat = obs['lat']
-            urban_mask_value = urban_vicinity.sel({urban_vicinity.cf['X'].name: obs_lon, urban_vicinity.cf['Y'].name: obs_lat},method='nearest')
-            if urban_mask_value== 0:
-                obs_color = 'blue'  
-            elif urban_mask_value == 1:
-                obs_color = 'black'
-            else:
-                obs_color = 'else' 
-        ax.plot(obs_lon, obs_lat, marker='o', markersize=5, color=obs_color,transform=proj, zorder = 100)
+        for index, ob in obs.iterrows():
+            ax.scatter(ob['lon'], ob['lat'], c = ob.mean('time'), cmap = 'bwr', transform=proj, zorder = 100)
     
     plt.subplots_adjust(wspace=0.1, hspace=0.1)
     

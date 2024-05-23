@@ -13,8 +13,6 @@ import geopandas as gpd
 from utils import (
     RCM_DICT,
     MODEL_DICT,
-    RLAT_NAMES,
-    RLON_NAMES,
 )
 
 def load_variable(root_esgf, variable, domain, model, scenario):
@@ -118,19 +116,6 @@ def fix_sftuf(
         ds_sftuf = ds_sftuf.rename({'urban': 'sftuf'})
         
     return ds_sftuf
-    
-#def select_name(names, avail_names):
-#    """
-#    Select a variable/coordinate name from a list of potential names that are available in the dataset.
-#
-#    Parameters:
-#    names (set): A set of potential names.
-#    avail_names (set): A set of available names in the dataset.
-#
-#    Returns:
-#    str: The first name from the intersection of potential and available names.
-#    """
-#    return list(names.intersection(list(avail_names)))[0]
 
 def load_fixed_variables(domain, model, root_esgf, root_nextcloud):
     """

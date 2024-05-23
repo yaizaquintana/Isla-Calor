@@ -13,10 +13,6 @@ MODEL_DICT={
     'RegCM' : dict(sftuf='', orog='orog',sftlf='sftlf'),
 }
 
-# coordinates name
-RLAT_NAMES = {'rlat', 'y', 'iy'}
-RLON_NAMES = {'rlon', 'x', 'jx'}
-
 # Dictionary containing city locations and their respective domains
 location = {
      'Mexico City' : dict(lon=-99.0833, lat=19.4667, domain = 'CAM-22'),

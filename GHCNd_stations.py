@@ -7,13 +7,14 @@ var_map = {
     'tasmax': 'TMAX'
 }
 
-def load_ghcnd_stations(lon, lat):
+def load_ghcnd_stations(lon, lat, radious = 0.5):
     '''
     Load GHCND stations near a specific location.
 
     Parameters:
     lon (float): Longitude of the selected city.
     lat (float): Latitude of the selected city.
+    radious (float): Maximum search distance for observations 
 
     Returns:
     gpd.GeoDataFrame: Geospatial DataFrame of nearby GHCND stations.
@@ -26,7 +27,7 @@ def load_ghcnd_stations(lon, lat):
     
     rval = ghcnd_stations.assign(dist = ghcnd_stations.distance(Point(lon, lat)))
     rval.sort_values(by = 'dist', inplace = True)
-    rval = rval[rval.dist < 0.5].to_crs(epsg=3857)
+    rval = rval[rval.dist < radious].to_crs(epsg=3857)
     return rval
 
 def get_ghcnd_df(code):
@@ -52,7 +53,8 @@ def get_ghcnd_df(code):
       rval = pd.DataFrame()
     return(rval)
 
-def get_valid_timeseries(city, stations, ds_var, variable = 'tasmin', valid_threshold=0.8, idate='1979-01-01', fdate='2014-12-31',var_map=var_map):
+def get_valid_timeseries(city, stations, ds_var, variable = 'tasmin', 
+                         valid_threshold = 0.8, idate = '1979-01-01', fdate = '2014-12-31', var_map = var_map):
     '''
     Retrieves valid time series data for a specific variable from GHCND stations for a given city.
 
@@ -83,11 +85,11 @@ def get_valid_timeseries(city, stations, ds_var, variable = 'tasmin', valid_thre
             continue
         availvars = available_vars(stn_data)
         if var in availvars:
-          valid_records = stn_data[var].loc[period].notna().sum()/ndays
-          if valid_records > valid_threshold:
-            print(f'{city} -- {stn_data.NAME[0]} - {var} has {100*valid_records:.1f}% valid records in {idate} to {fdate}')
-            valid_codes.append(stn_code)
-            valid_time_series.append(stn_data[var].loc[period])
+            valid_records = stn_data[var].loc[period].notna().sum()/ndays
+            if valid_records > valid_threshold:
+                print(f'{city} -- {stn_data.NAME[0]} - {var} has {100*valid_records:.1f}% valid records in {idate} to {fdate}')
+                valid_codes.append(stn_code)
+                valid_time_series.append(stn_data[var].loc[period])
 
     return(stations[stations.code.isin(valid_codes)], valid_time_series, ds_var_period)
 
