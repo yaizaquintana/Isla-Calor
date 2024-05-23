@@ -18,16 +18,37 @@ from utils import (
 )
 
 def load_variable(root_esgf, variable, domain, model, scenario):
-    # load variable data
+    """
+    Load variable data from multiple NetCDF files.
+
+    Parameters:
+    root_esgf (str): Root directory path for ESGF data.
+    variable (str): Variable name to load .
+    domain (str): Domain of the data.
+    model (str): Climate model identifier.
+    scenario (str): Emission scenario.
+
+    Returns:
+    xr.Dataset: Combined dataset containing the variable data across all found files.
+    """
     files_var = glob.glob(
         f"{root_esgf}{domain}/{RCM_DICT[domain][model].split('_')[0]}/*/{scenario}/*/{RCM_DICT[domain][model].split('_')[1]}/*/day/{variable}/*/{variable}_*.nc" 
     )
-
-    ds_var = xr.open_mfdataset(np.sort(files_var), combine='nested', concat_dim = 'time')
+    datasets = [xr.open_dataset(f) for f in np.sort(files_var)]
+    ds_var = xr.concat(datasets, dim='time')
     return ds_var
 
 def kelvin2degC(ds, variable):
-    # Convert from Kelvin to Celsius if the units are in Kelvin
+    """
+    Convert a variable's units from Kelvin to Celsius in an xarray Dataset.
+
+    Parameters:
+    ds (xr.Dataset): The dataset containing the variable to convert.
+    variable (str): The name of the variable to convert.
+
+    Returns:
+    xr.Dataset: The dataset with the variable converted to Celsius.
+    """
     if ds[variable].attrs.get('units') == 'K':
         ds[variable] = ds[variable] -273.15
         ds[variable].attrs['units'] = 'degC'
@@ -35,12 +56,22 @@ def kelvin2degC(ds, variable):
     return ds
 
 def load_ucdb_city(root, city):
-    # Load city shapefile
-    ucdb_info = gpd.read_file(root  + '/GHS_FUA_UCD/GHS_STAT_UCDB2015MT_GLOBE_R2019A_V1_2.gpkg')
-    ucdb_city = ucdb_info.query(f'UC_NM_MN =="{city}"').to_crs(crs = 'EPSG:4326')
+    """
+    Load and filter a city shapefile from the Urban Centre Database (UCDB).
+
+    Parameters:
+    root (str): The root directory where the shapefile is located.
+    city (str): The name of the city to load.
+
+    Returns:
+    gpd.GeoDataFrame: A GeoDataFrame containing the filtered city shapefile.
+    """
+    ucdb_info = gpd.read_file(root + '/GHS_FUA_UCD/GHS_STAT_UCDB2015MT_GLOBE_R2019A_V1_2.gpkg')
+    ucdb_city = ucdb_info.query(f'UC_NM_MN =="{city}"').to_crs(crs='EPSG:4326')
     if city == 'London':
         ucdb_city = ucdb_city[ucdb_city['CTR_MN_NM'] == 'United Kingdom']
     return ucdb_city
+
 
 def fix_sftuf(
     domain : str | None = None, 
@@ -87,15 +118,32 @@ def fix_sftuf(
         ds_sftuf = ds_sftuf.rename({'urban': 'sftuf'})
         
     return ds_sftuf
-
-def select_name(names, avail_names):
-  # Select variable/coordinate names among a list of potential names.
-  # Potential names are matched against those available in the data set.
-  return(list(names.intersection(list(avail_names)))[0])
+    
+#def select_name(names, avail_names):
+#    """
+#    Select a variable/coordinate name from a list of potential names that are available in the dataset.
+#
+#    Parameters:
+#    names (set): A set of potential names.
+#    avail_names (set): A set of available names in the dataset.
+#
+#    Returns:
+#    str: The first name from the intersection of potential and available names.
+#    """
+#    return list(names.intersection(list(avail_names)))[0]
 
 def load_fixed_variables(domain, model, root_esgf, root_nextcloud):
     """
-    lalalal
+    Load fixed variable data files for a specific domain and model from given root directories.
+
+    Parameters:
+    domain (str): The domain of the data (e.g., 'Europe').
+    model (str): The model identifier (e.g., 'modelA').
+    root_esgf (str): The root directory for ESGF data.
+    root_nextcloud (str): The root directory for Nextcloud data.
+
+    Returns:
+    tuple: A tuple containing datasets for sftuf, orog, and sftlf.
     """
     # find fixed files
     file_sftuf = glob.glob(
@@ -160,8 +208,8 @@ class Urban_vicinity:
         if ds.lon.ndim == 2:
         # crop area
             ds = ds.isel(**{
-            select_name(RLAT_NAMES, ds.coords): slice(ilat-dlat,ilat+dlat),
-            select_name(RLON_NAMES, ds.coords): slice(ilon-dlon,ilon+dlon)
+            ds.cf['Y'].name: slice(ilat-dlat,ilat+dlat),
+            ds.cf['X'].name : slice(ilon-dlon,ilon+dlon)
             })   
         else:
             ds = ds.isel(**{
@@ -294,6 +342,12 @@ class Urban_vicinity:
     
     def plot_urban_borders(self, ds, ax):
         """
+        Plot the borders of urban areas on a map.
+    
+        Parameters:
+        ds (xr.Dataset): The dataset containing longitude, latitude, and urban area data.
+        ax (matplotlib.axes._subplots.AxesSubplot): The matplotlib axes on which to plot.
+    
         """
         lon2d = ds.lon.values
         lat2d = ds.lat.values
@@ -316,6 +370,22 @@ class Urban_vicinity:
     def plot_fixed_variables(self, ds_sftuf, ds_orog, ds_sftlf,
                              sftuf_mask, orog_mask, sftlf_mask, urban_areas = None,
                             ):
+        """
+        Plot fixed variables including urban fraction, orography, and land-sea mask.
+    
+        Parameters:
+        ds_sftuf (xr.Dataset): Dataset containing urban fraction data.
+        ds_orog (xr.Dataset): Dataset containing orography data.
+        ds_sftlf (xr.Dataset): Dataset containing land-sea mask data.
+        sftuf_mask (xr.DataArray): Mask for urban fraction.
+        orog_mask (xr.DataArray): Mask for orography.
+        sftlf_mask (xr.DataArray): Mask for land-sea mask.
+        urban_areas (xr.Dataset, optional): Dataset containing urban area borders.
+                                            Defaults to None.
+    
+        Returns:
+        matplotlib.figure.Figure: The generated figure.
+        """
         colors = ['#7C5B49', '#92716B', '#A89080', '#C0B49E', '#DACCB9', '#F5F5DC']
         custom_cmap = LinearSegmentedColormap.from_list("custom_terrain", colors)
         
@@ -390,7 +460,7 @@ class Urban_vicinity:
             for k in range(3):
                 Urban_vicinity.plot_urban_borders(self, urban_areas, axes[1, k])
 
-        plt.subplots_adjust(wspace=0.1, hspace=0.1)  # Ajusta el espacio horizontal y vertical
+        plt.subplots_adjust(wspace=0.1, hspace=0.1)  # Adjust vertical and horizontal space
         return fig
 
     def netcdf_attrs(self, ds):        
