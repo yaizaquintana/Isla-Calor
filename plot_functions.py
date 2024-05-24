@@ -9,7 +9,7 @@ var_map = {
     'tasmax': 'TMAX'
 }
 
-def plot_climatology(ds, ucdb_city, urban_vicinity, variable, URBAN, obs = None):
+def plot_climatology(ds, ucdb_city, urban_vicinity,variable, URBAN, valid_stations = None, time_series=None):
     """
     Plot the climatological data.
 
@@ -32,8 +32,16 @@ def plot_climatology(ds, ucdb_city, urban_vicinity, variable, URBAN, obs = None)
     # Compute the maximum absolute value
     max_abs_value = abs(data).max().item()
     
+#    if valid_stations is not None:
+#        for index, valid_stations in valid_stations.iterrows():
+#            for item in time_series:
+#                temp_obs=item['data'].mean()[0]-rural_mean
+#                if abs(temp_obs)>max_abs_value:
+#                    max_abs_value=abs(temp_obs)
+
+    
     im1 = ax.pcolormesh(ds.lon, ds.lat, data.values,
-                    cmap = 'bwr', alpha = 0.7,
+                    cmap='bwr', alpha = 0.7,
                     vmin = - max_abs_value, 
                     vmax = max_abs_value)
     
@@ -46,10 +54,16 @@ def plot_climatology(ds, ucdb_city, urban_vicinity, variable, URBAN, obs = None)
     
     # Overlay the cell borders and handle NaNs
     URBAN.plot_urban_borders(urban_vicinity, ax)
-    
-    if obs is not None:
-        for index, ob in obs.iterrows():
-            ax.scatter(ob['lon'], ob['lat'], c = ob.mean('time'), cmap = 'bwr', transform=proj, zorder = 100)
+
+    if valid_stations is not None:
+        for index, valid_stations in valid_stations.iterrows():
+            obs_lon = valid_stations['lon']
+            obs_lat = valid_stations['lat']
+            for item in time_series:
+                if item['code'] == valid_stations['code']:
+                    temp_obs=item['data'].mean()[0]-rural_mean
+            ax.scatter(obs_lon, obs_lat, c=temp_obs, marker='o', cmap='bwr', alpha=0.7,
+                         vmin=-max_abs_value, vmax=max_abs_value) 
     
     plt.subplots_adjust(wspace=0.1, hspace=0.1)
     
@@ -92,17 +106,22 @@ def plot_time_series(ds_var, variable,urban_vicinity,time_series=None,data_squar
     
     if time_series is not None:
         var = var_map.get(variable, None)
-        obs_monthly_change = []
-        time_series_df = pd.concat(time_series, axis=1)
-        time_series_df.index = pd.to_datetime(time_series_df.index)
-        time_series_df['month'] = time_series_df.index.month
-        for i in range(1, 13):
-            monthly_data = time_series_df.loc[time_series_df.index.month == i].mean()
-            rural_data = rural_mean[i].values
-            monthly_change = monthly_data[var] - rural_data
-            obs_monthly_change.append(monthly_change)
-        
-        plt.plot(range(1, 13), obs_monthly_change, marker='o', color='red', linestyle='-', linewidth=2) 
+        obs_monthly_change_mean = [0] * 12
+        for item in time_series:
+            time_series_df = pd.DataFrame(item['data'])
+            time_series_df.index = pd.to_datetime(time_series_df.index)
+            time_series_df['month'] = time_series_df.index.month
+            obs_monthly_change = []
+            for i in range(1, 13):
+                monthly_data = time_series_df.loc[time_series_df.index.month == i].mean()
+                rural_data = rural_mean[i].values
+                monthly_change = monthly_data[var] - rural_data
+                obs_monthly_change.append(monthly_change)
+                obs_monthly_change_mean[i-1] += monthly_change
+            plt.plot(range(1, 13), obs_monthly_change, marker='o', color='red', linestyle='-', linewidth=0.5) 
+        total_elements = len(time_series)
+        obs_monthly_change_mean = [x / total_elements for x in obs_monthly_change_mean]
+        plt.plot(range(1, 13), obs_monthly_change_mean, marker='o', color='red', linestyle='-', linewidth=2) 
     
     # Customize the plot
     ax.set_title('Annual Cycle of Sample Data')

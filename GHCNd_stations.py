@@ -7,14 +7,13 @@ var_map = {
     'tasmax': 'TMAX'
 }
 
-def load_ghcnd_stations(lon, lat, radious = 0.5):
+def load_ghcnd_stations(lon, lat):
     '''
     Load GHCND stations near a specific location.
 
     Parameters:
     lon (float): Longitude of the selected city.
     lat (float): Latitude of the selected city.
-    radious (float): Maximum search distance for observations 
 
     Returns:
     gpd.GeoDataFrame: Geospatial DataFrame of nearby GHCND stations.
@@ -27,7 +26,7 @@ def load_ghcnd_stations(lon, lat, radious = 0.5):
     
     rval = ghcnd_stations.assign(dist = ghcnd_stations.distance(Point(lon, lat)))
     rval.sort_values(by = 'dist', inplace = True)
-    rval = rval[rval.dist < radious].to_crs(epsg=3857)
+    rval = rval[rval.dist < 0.5].to_crs(epsg=3857)
     return rval
 
 def get_ghcnd_df(code):
@@ -53,8 +52,7 @@ def get_ghcnd_df(code):
       rval = pd.DataFrame()
     return(rval)
 
-def get_valid_timeseries(city, stations, ds_var, variable = 'tasmin', 
-                         valid_threshold = 0.8, idate = '1979-01-01', fdate = '2014-12-31', var_map = var_map):
+def get_valid_timeseries(city, stations, ds_var, variable = 'tasmin', valid_threshold=0.8, idate='1979-01-01', fdate='2014-12-31',var_map=var_map):
     '''
     Retrieves valid time series data for a specific variable from GHCND stations for a given city.
 
@@ -85,12 +83,12 @@ def get_valid_timeseries(city, stations, ds_var, variable = 'tasmin',
             continue
         availvars = available_vars(stn_data)
         if var in availvars:
-            valid_records = stn_data[var].loc[period].notna().sum()/ndays
-            if valid_records > valid_threshold:
-                print(f'{city} -- {stn_data.NAME[0]} - {var} has {100*valid_records:.1f}% valid records in {idate} to {fdate}')
-                valid_codes.append(stn_code)
-                valid_time_series.append(stn_data[var].loc[period])
-
+          valid_records = stn_data[var].loc[period].notna().sum()/ndays
+          if valid_records > valid_threshold:
+            print(f'{city} -- {stn_data.NAME[0]} - {var} has {100*valid_records:.1f}% valid records in {idate} to {fdate}')
+            valid_codes.append(stn_code)
+            valid_time_series.append({'data':stn_data[var].loc[period],'code':stn_code})
+  
     return(stations[stations.code.isin(valid_codes)], valid_time_series, ds_var_period)
 
 def available_vars(station):
@@ -105,5 +103,71 @@ def available_vars(station):
     """
     return(set(station.columns).intersection({'PRCP', 'TAVG', 'TMAX', 'TMIN', 'SNWD'}))
 
+def fahrenheit_to_celsius(time_series):
+    """
+    Converts temperature data from Fahrenheit to Celsius.
+
+    Parameters:
+    time_series (list of dicts): List of dictionaries with 'data' (pandas Series) and 'code' (station code).
+
+    Returns:
+    list of dicts: Modified time_series list with temperatures in Celsius.
+    """
+    for item in time_series:
+        item['data'] = (item['data'] - 32) * 5 / 9
+    return time_series
+
+def get_season(ds_var_period, time_series, season='all'):
+    '''
+    Selects the chosen season from the observations and dataset.
+
+    Parameters:
+    ds_var_period (xarray.Dataset): The dataset containing the variable data over the desired period.
+    time_series (list of pd.Series): List of time series data from observations.
+    season (str): The season to select ('all', 'DJF', 'MAM', 'JJA', 'SON').
+
+    Returns:
+    xarray.Dataset: The subset of the dataset containing the selected season.
+    pd.DataFrame: DataFrame of the time series data for the selected season.
+    '''
+    if season == 'all':
+        # Return the whole period if season is 'all'
+        ds_season = ds_var_period
+        ts_season_list = []
+        for item in time_series:
+            time_series_df = pd.DataFrame(item['data'])
+            station_code = item['code']  # Get the station code
+            ts_season = {}
+            ts_season['data'] = time_series_df
+            ts_season['code'] = station_code  # Add station code to the DataFrame
+            ts_season_list.append(ts_season)
+            
+    else:
+        # Select the months corresponding to each season
+        seasons = {
+            'DJF': [12, 1, 2],
+            'MAM': [3, 4, 5],
+            'JJA': [6, 7, 8],
+            'SON': [9, 10, 11]
+        }
+        selected_months = seasons.get(season, None)
+
+        
+        # Select the data for the chosen season from the dataset
+        ds_season = ds_var_period.sel(time=ds_var_period['time.month'].isin(selected_months))
+        
+        # Select the data for the chosen season from the time series
+        ts_season_list = []
+        for item in time_series:
+            time_series_df = pd.DataFrame(item['data'])
+            time_series_df.index = pd.to_datetime(time_series_df.index)
+            time_series_df['month'] = time_series_df.index.month
+            station_code = item['code']  # Get the station code
+            ts_season = {}
+            ts_season['data'] = time_series_df.loc[time_series_df['month'].isin(selected_months)].drop(columns=['month'])
+            ts_season['code'] = station_code  # Add station code to the DataFrame
+            ts_season_list.append(ts_season)
+
+    return ds_season, ts_season_list
 
 
