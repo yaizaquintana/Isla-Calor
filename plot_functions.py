@@ -85,7 +85,7 @@ def plot_time_series(ds_var, variable,urban_vicinity,time_series=None, valid_sta
     
     # Plot the annual cycle
     fig, ax = plt.subplots(figsize=(20, 10)) 
-    climatological_monthly_mean.plot(ax=ax, marker='o', color='skyblue', linestyle='-', linewidth=2, label='Urban mean')
+    climatological_monthly_mean.plot(ax=ax,  color='skyblue', linestyle='-', linewidth=2, label='Urban mean')
 
     # Plot individual data squares for urban and rural areas if requested
     if data_squares==True:
@@ -107,16 +107,16 @@ def plot_time_series(ds_var, variable,urban_vicinity,time_series=None, valid_sta
         for i in climatological_monthly.cf['X'].values:
             for j in climatological_monthly.cf['Y'].values:
                 if urban_vicinity['urban_area'].sel({urban_vicinity.cf['X'].name: i, urban_vicinity.cf['Y'].name: j}) == 1:
-                    climatological_monthly.sel({ds_var.cf['X'].name:i, ds_var.cf['Y'].name:j}).plot(ax=ax, color='red', marker='o', linewidth=0.5)
+                    climatological_monthly.sel({ds_var.cf['X'].name:i, ds_var.cf['Y'].name:j}).plot(ax=ax, color='red', linewidth=0.5)
                     urban_area_legend=True
                 elif urban_vicinity['urban_area'].sel({urban_vicinity.cf['X'].name: i, urban_vicinity.cf['Y'].name: j}) == 0:
-                    climatological_monthly.sel({ds_var.cf['X'].name:i, ds_var.cf['Y'].name:j}).plot(ax=ax, color='blue', marker='o', linewidth=0.5)
+                    climatological_monthly.sel({ds_var.cf['X'].name:i, ds_var.cf['Y'].name:j}).plot(ax=ax, color='blue', linewidth=0.5)
                     not_urban_area_legend=True
         #Add manually the legend
         if urban_area_legend==True:
-            ax.plot([], [], color='red', marker='o', linewidth=0.5, label='Urban Area')
+            ax.plot([], [], color='red',  linewidth=0.5, label='Urban Area')
         if not_urban_area_legend==True:
-            ax.plot([], [], color='blue',  marker='o', linewidth=0.5, label='Not Urban Area')
+            ax.plot([], [], color='blue',  linewidth=0.5, label='Not Urban Area')
     
     #Plot the observation if requested
     if time_series is not None:
@@ -139,10 +139,10 @@ def plot_time_series(ds_var, variable,urban_vicinity,time_series=None, valid_sta
             selected_value = urban_vicinity['urban_area'].isel(rlat=min_diff_idx[0], rlon=min_diff_idx[1]).values
             urban_mask_value = selected_value.item()
             if selected_value.item()==1:
-                color_obs='brown'
+                color_obs='red'
                 urban_obs_legend=True
             elif selected_value.item()==0:
-                color_obs='aquamarine'
+                color_obs='blue'
                 not_urban_obs_legend=True
             else:
                 color_obs='grey'
@@ -159,14 +159,14 @@ def plot_time_series(ds_var, variable,urban_vicinity,time_series=None, valid_sta
                         monthly_change = monthly_data[var] - rural_data
                         obs_monthly_change.append(monthly_change)
                         obs_monthly_change_mean[i-1] += monthly_change
-                    plt.plot(range(1, 13), obs_monthly_change, marker='v', color=color_obs, linestyle='-', linewidth=0.5)
+                    plt.plot(range(1, 13), obs_monthly_change, marker='o', color=color_obs, linestyle='-', linewidth=0.5)
         #Add manually the legend
         if urban_obs_legend==True:
-            ax.plot([], [], color='brown', marker='v',  linewidth=0.5, label='Urban Observations')
+            ax.plot([], [], color='red', marker='o',  linewidth=0.5, label='Urban Observations')
         if not_urban_obs_legend==True:
-            ax.plot([], [], color='aquamarine', marker='v',  linewidth=0.5, label='Not Urban Observations')
+            ax.plot([], [], color='blue', marker='o',  linewidth=0.5, label='Not Urban Observations')
         if not_obs_legend==True:
-            ax.plot([], [], color='grey', marker='v',  linewidth=0.5, label='Not Selected Area Observations')
+            ax.plot([], [], color='grey', marker='o',  linewidth=0.5, label='Not Selected Area Observations')
 
     
         total_elements = len(time_series)
