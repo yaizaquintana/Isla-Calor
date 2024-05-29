@@ -23,7 +23,6 @@ def load_ghcnd_stations(lon, lat):
     ghcnd_stations_column_widths = [   11,     9,    10,      7,     34,     4,       10 ]
     df = pd.read_fwf(ghcnd_stations_url, header = 0, widths = ghcnd_stations_column_widths, names = ghcnd_stations_column_names)
     ghcnd_stations=gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.lon, df.lat), crs = 'EPSG:4326')
-    
     rval = ghcnd_stations.assign(dist = ghcnd_stations.distance(Point(lon, lat)))
     rval.sort_values(by = 'dist', inplace = True)
     rval = rval[rval.dist < 0.5].to_crs(epsg=3857)
@@ -87,7 +86,7 @@ def get_valid_timeseries(city, stations, ds_var, variable = 'tasmin', valid_thre
           if valid_records > valid_threshold:
             print(f'{city} -- {stn_data.NAME[0]} - {var} has {100*valid_records:.1f}% valid records in {idate} to {fdate}')
             valid_codes.append(stn_code)
-            valid_time_series.append({'data':stn_data[var].loc[period],'code':stn_code})
+            valid_time_series.append({'data':stn_data[var].loc[period]/10.0,'code':stn_code})
   
     return(stations[stations.code.isin(valid_codes)], valid_time_series, ds_var_period)
 
@@ -102,20 +101,6 @@ def available_vars(station):
     set: A set of available variables that intersect with the known set of variables.
     """
     return(set(station.columns).intersection({'PRCP', 'TAVG', 'TMAX', 'TMIN', 'SNWD'}))
-
-def fahrenheit_to_celsius(time_series):
-    """
-    Converts temperature data from Fahrenheit to Celsius.
-
-    Parameters:
-    time_series (list of dicts): List of dictionaries with 'data' (pandas Series) and 'code' (station code).
-
-    Returns:
-    list of dicts: Modified time_series list with temperatures in Celsius.
-    """
-    for item in time_series:
-        item['data'] = (item['data'] - 32) * 5 / 9
-    return time_series
 
 def get_season(ds_var_period, time_series, season='all'):
     '''

@@ -6,16 +6,47 @@ RCM_DICT = {
     'EUR-22': {
         'REMO': 'GERICS_REMO2015',
     },
+    'WAS-22': {
+        'REMO': 'GERICS_REMO2015',
+        'RegCM': 'ICTP_RegCM4-6',
+    },
+    'EAS-22':
+     {
+        'REMO': 'GERICS_REMO2015',
+        'RegCM': 'ICTP_RegCM4-6',
+    },
+    'CAM-22':
+     {
+        'REMO': 'GERICS_REMO2015',
+        'RegCM': 'ICTP_RegCM4-6',
+    },
+    'SAM-22':
+     {
+        'REMO': 'GERICS_REMO2015',
+        'RegCM': 'ICTP_RegCM4-6',
+    },
+    'NAM-22':
+     {
+        'REMO': 'GERICS_REMO2015',
+        'RegCM': 'ICTP_RegCM4-6',
+    },
+    'AUS-22':
+     {
+        'REMO': 'GERICS_REMO2015',
+        'RegCM': 'ICTP_RegCM4-6',
+    },
+    'AFR-22':
+     {
+        'REMO': 'GERICS_REMO2015',
+        'RegCM': 'ICTP_RegCM4-6',
+    },
 }
+
 
 MODEL_DICT={
     'REMO' : dict(sftuf='orig_v3', orog='orog',sftlf='sftlf'),
     'RegCM' : dict(sftuf='', orog='orog',sftlf='sftlf'),
 }
-
-# coordinates name
-RLAT_NAMES = {'rlat', 'y', 'iy'}
-RLON_NAMES = {'rlon', 'x', 'jx'}
 
 # Dictionary containing city locations and their respective domains
 location = {
