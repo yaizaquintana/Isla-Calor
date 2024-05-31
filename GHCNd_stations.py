@@ -7,13 +7,14 @@ var_map = {
     'tasmax': 'TMAX'
 }
 
-def load_ghcnd_stations(lon, lat):
+def load_ghcnd_stations(lon, lat, radious = 0.5):
     '''
     Load GHCND stations near a specific location.
 
     Parameters:
     lon (float): Longitude of the selected city.
     lat (float): Latitude of the selected city.
+    radius (float): Maximum distance allowed.
 
     Returns:
     gpd.GeoDataFrame: Geospatial DataFrame of nearby GHCND stations.
@@ -25,7 +26,7 @@ def load_ghcnd_stations(lon, lat):
     ghcnd_stations=gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.lon, df.lat), crs = 'EPSG:4326')
     rval = ghcnd_stations.assign(dist = ghcnd_stations.distance(Point(lon, lat)))
     rval.sort_values(by = 'dist', inplace = True)
-    rval = rval[rval.dist < 0.5].to_crs(epsg=3857)
+    rval = rval[rval.dist < radious].to_crs(epsg=3857)
     return rval
 
 def get_ghcnd_df(code):

@@ -1,9 +1,11 @@
 RCM_DICT = {
-    'EUR-11': { 
+    'EUR-11': 
+    { 
         'REMO': 'GERICS_REMO2015',
         'RegCM': 'ICTP_RegCM4-6',
     },
-    'EUR-22': {
+    'EUR-22': 
+    {
         'REMO': 'GERICS_REMO2015',
     },
     'WAS-22': {
@@ -18,12 +20,12 @@ RCM_DICT = {
     'CAM-22':
      {
         'REMO': 'GERICS_REMO2015',
-        'RegCM': 'ICTP_RegCM4-6',
+        'RegCM': 'ICTP_RegCM4-7',
     },
     'SAM-22':
      {
         'REMO': 'GERICS_REMO2015',
-        'RegCM': 'ICTP_RegCM4-6',
+        'RegCM': 'ICTP_RegCM4-7',
     },
     'NAM-22':
      {
@@ -33,12 +35,12 @@ RCM_DICT = {
     'AUS-22':
      {
         'REMO': 'GERICS_REMO2015',
-        'RegCM': 'ICTP_RegCM4-6',
+        'RegCM': 'ICTP_RegCM4-7',
     },
     'AFR-22':
      {
         'REMO': 'GERICS_REMO2015',
-        'RegCM': 'ICTP_RegCM4-6',
+        'RegCM': 'ICTP_RegCM4-7',
     },
 }
 

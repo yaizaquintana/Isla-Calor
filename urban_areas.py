@@ -34,7 +34,30 @@ def load_variable(root_esgf, variable, domain, model, scenario):
     )
     datasets = [xr.open_dataset(f) for f in np.sort(files_var)]
     ds_var = xr.concat(datasets, dim='time')
+    ds_var = fix_360_longitudes(ds_var)
     return ds_var
+
+def fix_360_longitudes(
+    dataset: xr.Dataset, lonname: str = "lon"
+) -> xr.Dataset:
+    """
+    Fix longitude values.
+
+    Function to transform datasets where longitudes are in (0, 360) to (-180, 180).
+
+    Parameters
+    ----------
+    dataset (xarray.Dataset): data stored by dimensions
+    lonname (str): name of the longitude dimension
+
+    Returns
+    -------
+    dataset (xarray.Dataset): data with the new longitudes
+    """
+    lon = dataset[lonname]
+    if lon.max().values > 180 and lon.min().values >= 0:
+        dataset[lonname] = dataset[lonname].where(lon <= 180, other=lon - 360)
+    return dataset
 
 def kelvin2degC(ds, variable):
     """
@@ -105,7 +128,7 @@ def fix_sftuf(
         # longitud and latitud for ds_sftuf does not match with orog/sftlf
         ds_sftuf['lon'][:] = ds_orog['lon']
         ds_sftuf['lat'][:] = ds_orog['lat']
-    elif (model == "RegCM") and (domain == "EUR-11"):
+    elif (model == "RegCM") and (domain in ["EUR-11", "CAM-22", "SAM-22", "AUS-22", "AFR-22"]):
         ds_sftuf = ds_sftuf.assign_coords(x=ds_orog.x, y=ds_orog.y)
     
     # select time = 0
@@ -145,6 +168,11 @@ def load_fixed_variables(domain, model, root_esgf, root_nextcloud):
     sftuf = xr.open_dataset(file_sftuf[0])
     orog = xr.open_dataset(file_orog[0])
     sftlf = xr.open_dataset(file_sftlf[0])
+
+    # 360 to 180
+    sftuf = fix_360_longitudes(sftuf)
+    orog = fix_360_longitudes(orog)
+    sftlf = fix_360_longitudes(sftlf)
 
     return sftuf, orog, sftlf
 
@@ -335,7 +363,6 @@ class Urban_vicinity:
     
         """
         lon2d = ds.lon.values
-        lon2d = np.where(lon2d >180, lon2d - 360, lon2d)
         lat2d = ds.lat.values
         # Overlay the cell borders and handle NaNs
         for i in range(len(ds.lat) - 1):
@@ -343,11 +370,8 @@ class Urban_vicinity:
                 lons = [lon2d[i, j], lon2d[i, j+1], lon2d[i+1, j+1], lon2d[i+1, j], lon2d[i, j]]
                 lats = [lat2d[i, j], lat2d[i, j+1], lat2d[i+1, j+1], lat2d[i+1, j], lat2d[i, j]]
 
-                lons = lons - abs(lon2d[i, j] - lon2d[i, j+1])/2
-                lons = np.where(lons > 180, lons -360, lons)
-                
+                lons = lons - abs(lon2d[i, j] - lon2d[i, j+1])/2                
                 lats = lats - abs(lat2d[i, j] - lat2d[i+1, j])/2
-                lats= np.where(lats > 180, lats -360, lats)
                 
                 data_cell = ds['urban_area'].values[i, j]
 
